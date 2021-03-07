@@ -20,12 +20,10 @@ export default createStore({
 
     set(state, payload) {
       state.tarefas.unshift(payload);
-      localStorage.setItem("tarefas", JSON.stringify(state.tarefas));
     },
 
     excluir(state, payload) {
       state.tarefas = state.tarefas.filter((tarefa) => tarefa.id !== payload);
-      localStorage.setItem("tarefas", JSON.stringify(state.tarefas));
     },
 
     tarefa(state, payload) {
@@ -42,34 +40,82 @@ export default createStore({
       );
 
       router.push("/");
-      localStorage.setItem("tarefas", JSON.stringify(state.tarefas));
     },
   },
   actions: {
-    addLocalStorage({ commit }) {
-      if (localStorage.getItem("tarefas")) {
-        const tarefasLocal = JSON.parse(localStorage.getItem("tarefas"));
-        commit("carregar", tarefasLocal);
-        return;
-      }
+    async addLocalStorage({ commit }) {
+      try {
+        const url =
+          "https://fir-api-rest-vue-default-rtdb.firebaseio.com/tarefas.json";
 
-      localStorage.setItem("tarefas", JSON.stringify([]));
+        const res = await fetch(url);
+        const dataDB = await res.json();
+
+        const arrayTarefa = [];
+
+        for (let id in dataDB) {
+          arrayTarefa.push(dataDB[id]);
+        }
+
+        commit("carregar", arrayTarefa);
+      } catch (error) {
+        console.log(error);
+      }
     },
 
-    setTarefa({ commit }, tarefa) {
+    async setTarefa({ commit }, tarefa) {
+      try {
+        const url = `https://fir-api-rest-vue-default-rtdb.firebaseio.com/tarefas/${tarefa.id}.json`;
+
+        const res = await fetch(url, {
+          method: "PUT",
+          headers: {
+            "Content-Types": "application/json",
+          },
+          body: JSON.stringify(tarefa),
+        });
+
+        const dataDB = await res.json();
+        console.log(dataDB);
+      } catch (error) {
+        console.log(error);
+      }
+
       commit("set", tarefa);
     },
 
-    deletarTarefa({ commit }, id) {
-      commit("excluir", id);
+    async deletarTarefa({ commit }, id) {
+      try {
+        const url = `https://fir-api-rest-vue-default-rtdb.firebaseio.com/tarefas/${id}.json`;
+
+        await fetch(url, {
+          method: "DELETE",
+        });
+
+        commit("excluir", id);
+      } catch (error) {
+        console.log(error);
+      }
     },
 
     setTarefaId({ commit }, id) {
       commit("tarefa", id);
     },
 
-    atualizarTarefa({ commit }, tarefa) {
-      commit("atualizar", tarefa);
+    async atualizarTarefa({ commit }, tarefa) {
+      try {
+        const url = `https://fir-api-rest-vue-default-rtdb.firebaseio.com/tarefas/${tarefa.id}.json`;
+
+        const res = await fetch(url, {
+          method: "PATCH",
+          body: JSON.stringify(tarefa),
+        });
+        const dataDB = await res.json();
+
+        commit("atualizar", dataDB);
+      } catch (error) {
+        console.log(error);
+      }
     },
   },
   modules: {},
